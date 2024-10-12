@@ -112,3 +112,4 @@ button.addEventListener("click", () => {
 
 // Todo:降水確率取得　data[0].timeSeries[1].areas.pops;
 // Todo:気温取得　　　data[0].timeSeries[2].areas.area; data[0].timeSeries[2].areas.temps; 
+// Todo:デザイン調整

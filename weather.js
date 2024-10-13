@@ -1,115 +1,116 @@
 const apiURL = "https://www.jma.go.jp/bosai/forecast/data/forecast/130000.json";
 
-const getWeatherData = (url) => {
+const weatherData = (url) => {
   return fetch(url);
 };
 
-const button = document.querySelector("button");
+// 外部APIから天気予報のデータ取得
+const getWeatherData = async () => {
+  try {
+    const response = await weatherData(apiURL);
+    if (!response.ok) {
+      throw new Error(`HTTPエラー:${response.status}`);
+    }
+    const data = await response.json();
+    displayWeatherData(data);
+  } catch (e) {
+    throw new Error(e.message);
+  }
+};
 
-button.addEventListener("click", () => {
-  getWeatherData(apiURL)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTPエラー:${response.status}`);
-      }
-      return response.json();
+const displayWeatherData = (data) => {
+  const weatherContainer = document.getElementById("weatherData");
+  weatherContainer.innerHTML = "";
+
+  const timeDefines = data[0].timeSeries[0].timeDefines;
+  const formattedDates = timeDefines.map(formatDate)
+  const areas = data[0].timeSeries[0].areas;
+
+  appendDateRow(weatherContainer, formattedDates);
+  areas.forEach((area, index) =>
+    appendAreaData(
+      weatherContainer,
+      area
+    )
+  );
+};
+
+const appendDateRow = (container, formattedDates) => {
+  const dateRow = createRowWithHeader(
+    "日付",
+    formattedDates.map((date) => createCell(date))
+  );
+  container.appendChild(dateRow);
+};
+
+const appendAreaData = (
+  container,
+  area
+) => {
+  const areaData = [
+    { header: "地域", values: [area.area.name] },
+    { header: "天気", values: area.weatherCodes, isImageRow: true },
+    { header: `天気情報`, values: area.weathers },
+    { header: "風", values: area.winds },
+    { header: "波", values: area.waves }
+  ];
+
+  areaData.forEach((data) =>
+    appendWeatherRow(container, data.header, data.values, data.isImageRow)
+  );
+};
+
+const appendWeatherRow = (container, headerText, data, isImageRow = false) => {
+  const row = createRowWithHeader(
+    headerText,
+    data.map((item) => {
+      return createCell(item, isImageRow);
     })
-    .then((data) => {
-      console.log({data});
-      const weatherContainer = document.getElementById("weatherData");
-      weatherContainer.innerHTML = "";
+  );
+  container.appendChild(row);
+};
 
-      // 日付取得
-      const timeDefines = data[0].timeSeries[0].timeDefines;
 
-      // 東京地方の天気予報データ取得
-      const areas = data[0].timeSeries[0].areas;
-      console.log({ areas });
+const createRowWithHeader = (headerText, cells) => {
+  const row = document.createElement("tr");
+  row.appendChild(createHeaderCell(headerText));
+  cells.forEach((cell) => row.appendChild(cell));
+  return row;
+};
 
-      // 日付行を作成
-      const dateRow = document.createElement("tr");
-      const dateHeader = document.createElement("th")
-      dateHeader.textContent = "日付";
-      dateRow.appendChild(dateHeader)
-      timeDefines.forEach((date) => {
-        const dateCell = document.createElement("th");
-        dateCell.textContent = date;
-        dateRow.appendChild(dateCell);
-      });
-      weatherContainer.appendChild(dateRow);
+const createCell = (item, isImageRow = false) => {
+  const cell = document.createElement(isImageRow ? "td" : "th");
+  if (isImageRow) {
+    const img = document.createElement("img");
+    img.src = `https://www.jma.go.jp/bosai/forecast/img/${item}.svg`;
+    cell.appendChild(img);
+  } else {
+    cell.textContent = item;
+  }
+  return cell;
+};
 
-      // 各地域ごとの情報を追加
-      areas.forEach((tokyoArea) => {
-        const row = document.createElement("tr");
-        const areaName = tokyoArea.area.name;
 
-        // 地域名をthに設定
-        const areaCell = document.createElement("th");
-        areaCell.textContent = areaName;
-        row.appendChild(areaCell);
+const createHeaderCell = (text) => {
+  const cell = document.createElement("th");
+  cell.textContent = text;
+  return cell;
+};
 
-        // 天気の画像追加
-        const weatherCodeRow = document.createElement("tr");
-        const weatherCodeHeader = document.createElement("th");
-        weatherCodeHeader.textContent = "天気";
-        weatherCodeRow.appendChild(areaCell);
-        weatherCodeRow.appendChild(weatherCodeHeader);
+document
+  .getElementById("getWeatherBtn")
+  .addEventListener("click", getWeatherData);
 
-        tokyoArea.weatherCodes.forEach((weatherCode) => {
-          const weatherCodeCell = document.createElement("td");
-          const weatherImg = document.createElement("img");
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
 
-          // 天気コードに基づいて画像URLを生成
-          const imageUrl = `https://www.jma.go.jp/bosai/forecast/img/${weatherCode}.svg`;
-          weatherImg.src = imageUrl;
-          weatherCodeCell.appendChild(weatherImg);
-          weatherCodeRow.appendChild(weatherCodeCell);
-        });
-        weatherContainer.appendChild(weatherCodeRow);
+  // 月を取得
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
-        // 天気の情報追加
-        const weatherRow = document.createElement("tr");
-        tokyoArea.weathers.forEach((weather) => {
-          const weatherCell = document.createElement("td");
-          weatherCell.textContent = weather;
-          weatherRow.appendChild(weatherCell);
-        });
-        weatherContainer.appendChild(weatherRow);
+  // 曜日を取得
+  const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+  const weekday = weekdays[date.getDay()];
 
-        // 風の情報追加
-        const windRow = document.createElement("tr");
-        const windHeader = document.createElement("th");
-        windHeader.textContent = "風";
-        windRow.appendChild(windHeader);
-
-        tokyoArea.winds.forEach((wind) => {
-          const windCell = document.createElement("td");
-          windCell.textContent = wind;
-          windRow.appendChild(windCell);
-        });
-
-        weatherContainer.appendChild(windRow);
-
-        // 波の情報追加
-        const waveRow = document.createElement("tr");
-        const waveHeader = document.createElement("th");
-        waveHeader.textContent = "波";
-        waveRow.appendChild(waveHeader);
-
-        tokyoArea.waves.forEach((wave) => {
-          const waveCell = document.createElement("td");
-          waveCell.textContent = wave;
-          waveRow.appendChild(waveCell);
-        });
-
-        weatherContainer.appendChild(waveRow);
-      });
-    })
-    .catch((error) => {
-      console.error(error);
-    });
-});
-
-// Todo:降水確率取得　data[0].timeSeries[1].areas.pops;
-// Todo:気温取得　　　data[0].timeSeries[2].areas.area; data[0].timeSeries[2].areas.temps; 
-// Todo:デザイン調整
+  return `${month}月${day}日（${weekday}）`;
+};

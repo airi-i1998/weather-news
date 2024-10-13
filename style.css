@@ -1,0 +1,33 @@
+body {
+  width: 100%;
+  overflow-x: hidden;
+}
+header {
+  display: flex;
+  margin: 10px;
+}
+
+button {
+  margin: 30px;
+}
+
+th {
+  width: 1%;
+}
+
+table, th, tr,td {
+  border: 1px solid #333;
+}
+
+img {
+  align-items: center;
+}
+
+td {
+  text-align: center;
+}
+
+.area {
+  width: 10%;
+  background-color: yellow; /* 確認のための背景色 */
+}
